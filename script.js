@@ -1,60 +1,50 @@
+const API_KEY = "26d0fdb46eef47ff9ba8d259bfe9661c"; 
 const resultsContainer = document.getElementById("results");
 const searchBtn = document.getElementById("searchBtn");
 const searchInput = document.getElementById("searchInput");
+const genreSelect = document.getElementById("genreSelect");
 const modal = document.getElementById("modal");
 const modalBody = document.getElementById("modalBody");
 const closeModal = document.getElementById("closeModal");
 
-async function fetchCoins(query) {
-  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${query}&order=market_cap_desc&per_page=6&page=1&sparkline=false`;
-  try {
-    const response = await fetch(url);
-    return await response.json();
-  } catch {
-    return [];
-  }
+async function fetchGames(url) {
+  const response = await fetch(url);
+  const data = await response.json();
+  return data.results || [];
 }
 
-async function fetchCoinDetails(id) {
-  const url = `https://api.coingecko.com/api/v3/coins/${id}`;
-  try {
-    const response = await fetch(url);
-    return await response.json();
-  } catch {
-    return null;
-  }
+async function fetchGenres() {
+  const url = `https://api.rawg.io/api/genres?key=${API_KEY}`;
+  const response = await fetch(url);
+  const data = await response.json();
+  genreSelect.innerHTML = `<option value="">Todos los géneros</option>`;
+  data.results.forEach(genre => {
+    const option = document.createElement("option");
+    option.value = genre.slug;
+    option.textContent = genre.name;
+    genreSelect.appendChild(option);
+  });
 }
 
-async function fetchWikipediaSummary(coinName) {
-  const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${coinName}`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.extract;
-  } catch {
-    return null;
-  }
-}
-
-function renderCoins(coins) {
+function renderGames(games) {
   resultsContainer.innerHTML = "";
-
-  if (coins.length === 0) {
-    resultsContainer.innerHTML = "<p>No se encontraron criptomonedas.</p>";
+  if (games.length === 0) {
+    resultsContainer.innerHTML = "<p>No se encontraron juegos.</p>";
     return;
   }
 
-  coins.forEach(coin => {
+  games.forEach(game => {
     const card = document.createElement("div");
     card.classList.add("card");
 
     card.innerHTML = `
-      <img src="${coin.image}" alt="${coin.name}">
-      <h3>${coin.name} (${coin.symbol.toUpperCase()})</h3>
-      <p><strong>Precio:</strong> $${coin.current_price}</p>
-      <p><strong>Cambio 24h:</strong> ${coin.price_change_percentage_24h.toFixed(2)}%</p>
-      <button data-id="${coin.id}" data-name="${coin.name}">Ver más</button>
+      <img src="${game.background_image}" alt="${game.name}">
+      <div class="card-content">
+        <h3>${game.name}</h3>
+        <p><strong>Rating:</strong> ${game.rating} ⭐</p>
+        <p><strong>Lanzamiento:</strong> ${game.released || "N/D"}</p>
+        <button data-id="${game.id}">Ver más</button>
+      </div>
     `;
 
     resultsContainer.appendChild(card);
@@ -62,45 +52,46 @@ function renderCoins(coins) {
 
   document.querySelectorAll(".card button").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const coinId = btn.getAttribute("data-id");
-      const coinName = btn.getAttribute("data-name");
-      const details = await fetchCoinDetails(coinId);
-      const wiki = await fetchWikipediaSummary(coinName);
-
+      const id = btn.getAttribute("data-id");
+      const details = await fetchGameDetails(id);
       modalBody.innerHTML = `
-        <h2>${details.name} (${details.symbol.toUpperCase()})</h2>
-        <img src="${details.image.large}" alt="${details.name}" style="max-width:100px; margin:1rem 0;">
-        <p><strong>Ranking:</strong> #${details.market_cap_rank}</p>
-        <p><strong>Capitalización:</strong> $${details.market_data.market_cap.usd.toLocaleString()}</p>
-        <p><strong>Precio actual:</strong> $${details.market_data.current_price.usd}</p>
-        <p><strong>Cambio 24h:</strong> ${details.market_data.price_change_percentage_24h.toFixed(2)}%</p>
-        <h3>Introducción</h3>
-        <p>${wiki || "No hay descripción disponible en Wikipedia."}</p>
+        <h2>${details.name}</h2>
+        <img src="${details.background_image}" style="width:100%; border-radius:8px; margin:1rem 0;">
+        <p><strong>Metacritic:</strong> ${details.metacritic || "N/D"}</p>
+        <p><strong>Plataformas:</strong> ${details.platforms.map(p => p.platform.name).join(", ")}</p>
+        <h3>Descripción</h3>
+        <p>${details.description_raw || "Sin descripción disponible."}</p>
       `;
       modal.style.display = "block";
     });
   });
 }
 
-async function loadFeaturedCoins() {
-  const featured = "bitcoin,ethereum,cardano,solana,polkadot";
-  const coins = await fetchCoins(featured);
-  renderCoins(coins);
+async function fetchGameDetails(id) {
+  const url = `https://api.rawg.io/api/games/${id}?key=${API_KEY}`;
+  const response = await fetch(url);
+  return await response.json();
+}
+
+async function loadFeaturedGames() {
+  const url = `https://api.rawg.io/api/games?key=${API_KEY}&page_size=12`;
+  const games = await fetchGames(url);
+  renderGames(games);
 }
 
 searchBtn.addEventListener("click", async () => {
-  const query = searchInput.value.trim().toLowerCase();
-  if (query) {
-    const coins = await fetchCoins(query);
-    renderCoins(coins);
-  }
+  const query = searchInput.value.trim();
+  let url = `https://api.rawg.io/api/games?key=${API_KEY}&page_size=12`;
+  if (query) url += `&search=${query}`;
+  if (genreSelect.value) url += `&genres=${genreSelect.value}`;
+  const games = await fetchGames(url);
+  renderGames(games);
 });
 
-searchInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") searchBtn.click();
-});
-
+genreSelect.addEventListener("change", () => searchBtn.click());
+searchInput.addEventListener("keypress", e => { if (e.key === "Enter") searchBtn.click(); });
 closeModal.addEventListener("click", () => modal.style.display = "none");
 window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
 
-loadFeaturedCoins();
+fetchGenres();
+loadFeaturedGames();

@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CryptoTracker</title>
-  <link rel="stylesheet" href="style.css">
+  <title>GameVerse</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="header">
-    <h1>CryptoTracker</h1>
-    <p>Consulta precios, datos y curiosidades de criptomonedas</p>
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Ejemplo: bitcoin, ethereum, cardano...">
+    <h1>GameVerse</h1>
+    <p>Explora videojuegos, descubre detalles y encuentra tu próximo favorito</p>
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Buscar videojuego...">
       <button id="searchBtn">Buscar</button>
+      <select id="genreSelect"></select>
     </div>
   </header>
 
   <main>
-    <h2>Criptomonedas populares</h2>
+    <h2>Videojuegos populares</h2>
     <div id="results" class="results-grid"></div>
   </main>
 
@@ -29,9 +30,9 @@
   </div>
 
   <footer>
-    <p>Miguel Folguera Rivera · Datos de <a href="https://www.coingecko.com/" target="_blank">CoinGecko API</a> y <a href="https://es.wikipedia.org/" target="_blank">Wikipedia</a></p>
+    <p>Miguel Folguera Rivera · Datos de <a href="https://rawg.io/" target="_blank">RAWG API</a></p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
